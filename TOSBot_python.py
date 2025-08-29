@@ -27,7 +27,7 @@ ptime = 0
 last_cmd = None
 tracked_bbox = None
 last_face_time = time.time()
-face_start_time  = None  # ✅ track last time a face was seen
+# face_start_time  = None  # ✅ track last time a face was seen
 
 # ---------------- Helper function ----------------
 # def compute_iou(boxA, boxB):
@@ -68,14 +68,13 @@ try:
         h, w = img.shape[:2]
 
         # print(face_start_time, time.time())
-
-  
+        candidates = []
         if results.multi_face_landmarks:
             # if face_start_time is None:
             #     face_start_time = time.time()
             
             last_face_time = time.time()  # ✅ reset timer when face is seen
-            candidates = []
+
             # Collect all faces with bounding boxes + landmarks
             for facelms in results.multi_face_landmarks:
                 xs = [lm.x * w for lm in facelms.landmark]
@@ -83,41 +82,37 @@ try:
                 x_min, x_max = int(min(xs)), int(max(xs))
                 y_min, y_max = int(min(ys)), int(max(ys))
                 bbox = (x_min, y_min, x_max, y_max)
-
-                candidates.append((bbox, facelms))
+                candidates = [(bbox, facelms)]
 
             # If we already have a tracked face, find best IoU match
-            if tracked_bbox is not None:
-                best_iou = 0
-                best_face = None
-                for bbox, facelms in candidates:
-                    iou = compute_iou(tracked_bbox, bbox)
-                    if iou > best_iou:
-                        best_iou = iou
-                        best_face = (bbox, facelms)
+            # if tracked_bbox is not None:
+            #     best_iou = 0
+            #     best_face = None
+            #     for bbox, facelms in candidates:
+            #         iou = compute_iou(tracked_bbox, bbox)
+            #         if iou > best_iou:
+            #             best_iou = iou
+            #             best_face = (bbox, facelms)
 
-                if best_iou > 0.3:
-                    face_to_track = best_face
-                else:
-                    face_to_track = max(candidates, key=lambda x: (x[0][2]-x[0][0])*(x[0][3]-x[0][1]))
-            else:
-                face_to_track = max(candidates, key=lambda x: (x[0][2]-x[0][0])*(x[0][3]-x[0][1]))
-
+                # if best_iou > 0.3:
+                #     face_to_track = best_face
+                # else:
+                #     face_to_track = max(candidates, key=lambda x: (x[0][2]-x[0][0])*(x[0][3]-x[0][1]))
+            # else:
+            #     face_to_track = max(candidates, key=lambda x: (x[0][2]-x[0][0])*(x[0][3]-x[0][1]))
             
         # ✅ If no face for >3 seconds → stop motors
         elif time.time() - last_face_time > 3:
-            face_start_time = None
+            # face_start_time = None
             if last_cmd != 'C':
                 arduino.write(b'C')
                 print("No face detected >3s → STOP")
                 last_cmd = 'C'
 
-        if face_to_track:
-            bbox, facelms = face_to_track
+        if candidates:
+            bbox, facelms = candidates[0]
             tracked_bbox = bbox
-
             mpDraw.draw_landmarks(img, facelms, myfacemesh.FACEMESH_TESSELATION)
-
             # compute mean (cx, cy)
             xs = [lm.x * w for lm in facelms.landmark]
             ys = [lm.y * h for lm in facelms.landmark]
@@ -146,8 +141,6 @@ try:
                 pwm = int(pwm_max*(1-math.exp(-k*(cx- right))))
                 cmd = f"R,{pwm}\n"
             else:
-                
-                
                 if depth>depth_upper:
                     pwm = int(pwm_max*(1-math.exp(-k*(depth- depth_upper))))
                     cmd = f"F,{pwm}\n"   
@@ -160,16 +153,12 @@ try:
 
                 else:
                     cmd = "C, 0"
-                    if face_start_time is None:
-                        face_start_time = time.time()
-                    
-                    elif time.time() - face_start_time>3:
-                        cmd = "S,0" 
-                        
-            
-
-            
-
+                    # if face_start_time is None:
+                    #     face_start_time = time.time()
+                    #
+                    # elif time.time() - face_start_time>3:
+                    #     cmd = "S,0"
+                    #
 
             if cmd != last_cmd:
                 if pwm!= 60:
@@ -178,7 +167,7 @@ try:
                     last_cmd = cmd
 
             # Draw center point and bbox
-            cv.circle(img, (cx, cy), 5, (0, 255, 0), -1)
+            cv.circle(img, (cx, cy), 1, (0, 255, 0), -1)
             cv.rectangle(img, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 2)
 
             if depth:
