@@ -25,27 +25,27 @@ pipeline.start(config)
                                                                   
 ptime = 0
 last_cmd = None
-tracked_bbox = None  # bounding box of the currently tracked face
+tracked_bbox = None
 last_face_time = time.time()
 face_start_time  = None  # ✅ track last time a face was seen
 
 # ---------------- Helper function ----------------
-def compute_iou(boxA, boxB):
-    """Compute IoU between two bboxes (x1,y1,x2,y2)."""
-    xA = max(boxA[0], boxB[0])
-    yA = max(boxA[1], boxB[1])
-    xB = min(boxA[2], boxB[2])
-    yB = min(boxA[3], boxB[3])
-
-    interArea = max(0, xB - xA) * max(0, yB - yA)
-    if interArea == 0:
-        return 0.0
-
-    boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
-    boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
-
-    iou = interArea / float(boxAArea + boxBArea - interArea)
-    return iou
+# def compute_iou(boxA, boxB):
+#     """Compute IoU between two bboxes (x1,y1,x2,y2)."""
+#     xA = max(boxA[0], boxB[0])
+#     yA = max(boxA[1], boxB[1])
+#     xB = min(boxA[2], boxB[2])
+#     yB = min(boxA[3], boxB[3])
+#
+#     interArea = max(0, xB - xA) * max(0, yB - yA)
+#     if interArea == 0:
+#         return 0.0
+#
+#     boxAArea = (boxA[2] - boxA[0]) * (boxA[3] - boxA[1])
+#     boxBArea = (boxB[2] - boxB[0]) * (boxB[3] - boxB[1])
+#
+#     iou = interArea / float(boxAArea + boxBArea - interArea)
+#     return iou
 
 try:
     while True:
